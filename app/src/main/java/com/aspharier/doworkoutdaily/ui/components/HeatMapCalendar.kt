@@ -3,6 +3,7 @@ package com.aspharier.doworkoutdaily.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,12 +32,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import coil3.compose.AsyncImage
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun HeatMapCalendar(
     workoutDates: Map<LocalDate, Int>,
     selfiesData: Map<LocalDate, String> = emptyMap(),
     modifier: Modifier = Modifier,
-    onDateClick: (LocalDate) -> Unit = {}
+    onDateClick: (LocalDate) -> Unit = {},
+    onDateLongClick: (LocalDate) -> Unit = {}
 ) {
     val themeMode = LocalThemeMode.current
     val today = remember { LocalDate.now() }
@@ -71,11 +74,13 @@ fun HeatMapCalendar(
             selfiesData = selfiesData,
             today = today,
             themeMode = themeMode,
-            onDateClick = onDateClick
+            onDateClick = onDateClick,
+            onDateLongClick = onDateLongClick
         )
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun MonthGrid(
     yearMonth: YearMonth,
@@ -83,7 +88,8 @@ private fun MonthGrid(
     selfiesData: Map<LocalDate, String>,
     today: LocalDate,
     themeMode: ThemeMode,
-    onDateClick: (LocalDate) -> Unit
+    onDateClick: (LocalDate) -> Unit,
+    onDateLongClick: (LocalDate) -> Unit
 ) {
     val firstDay = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
@@ -139,7 +145,11 @@ private fun MonthGrid(
                                 .weight(1f)
                                 .aspectRatio(1f)
                                 .padding(1.5.dp)
-                                .clickable(enabled = !isFuture) { onDateClick(date) }
+                                .combinedClickable(
+                                    enabled = !isFuture,
+                                    onClick = { onDateClick(date) },
+                                    onLongClick = { onDateLongClick(date) }
+                                )
                         )
                     } else {
                         Spacer(

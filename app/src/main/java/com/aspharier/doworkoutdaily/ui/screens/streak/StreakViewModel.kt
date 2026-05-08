@@ -60,6 +60,12 @@ class StreakViewModel(private val repository: WorkoutRepository) : ViewModel() {
         }
     }
 
+    fun deleteSelfie(date: LocalDate) {
+        viewModelScope.launch {
+            repository.deleteSelfie(date)
+        }
+    }
+
     class Factory(private val repository: WorkoutRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

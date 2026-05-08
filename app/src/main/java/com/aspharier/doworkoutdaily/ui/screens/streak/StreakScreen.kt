@@ -21,15 +21,22 @@ import android.os.Environment
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.draw.clip
 import androidx.core.content.FileProvider
+import com.aspharier.doworkoutdaily.data.repository.WorkoutRepository
 import com.aspharier.doworkoutdaily.ui.components.HeatMapCalendar
+import com.aspharier.doworkoutdaily.ui.theme.*
+import coil3.compose.AsyncImage
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.CornerRadius
 import java.io.File
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StreakScreen(
-    repository: com.aspharier.doworkoutdaily.data.repository.WorkoutRepository,
+    repository: WorkoutRepository,
     viewModel: StreakViewModel = viewModel(factory = StreakViewModel.Factory(repository))
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -37,6 +44,8 @@ fun StreakScreen(
     
     var currentPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var clickedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showHologramForPath by remember { mutableStateOf<String?>(null) }
+    var hologramDate by remember { mutableStateOf<LocalDate?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -78,20 +87,18 @@ fun StreakScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // ── Streak Fire ──
-            if (uiState.currentStreak > 0) {
-                val composition by rememberLottieComposition(
-                    LottieCompositionSpec.Asset("Fire.json")
-                )
-                val progress by animateLottieCompositionAsState(
-                    composition,
-                    iterations = LottieConstants.IterateForever
-                )
-                LottieAnimation(
-                    composition = composition,
-                    progress = { progress },
-                    modifier = Modifier.size(80.dp)
-                )
-            }
+            val composition by rememberLottieComposition(
+                LottieCompositionSpec.Asset("Fire.json")
+            )
+            val progress by animateLottieCompositionAsState(
+                composition,
+                iterations = LottieConstants.IterateForever
+            )
+            LottieAnimation(
+                composition = composition,
+                progress = { progress },
+                modifier = Modifier.size(80.dp)
+            )
 
             // ── Stats Grid ──
             Row(
@@ -157,12 +164,21 @@ fun StreakScreen(
                         .fillMaxWidth()
                         .padding(16.dp),
                     onDateClick = { date ->
-                        if (date == LocalDate.now() && uiState.selfiesData[date] == null) {
+                        val hasSelfie = uiState.selfiesData[date] != null
+                        if (hasSelfie) {
+                            showHologramForPath = uiState.selfiesData[date]
+                            hologramDate = date
+                        } else if (date == LocalDate.now()) {
                             val photoFile = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "selfie_${date}.jpg")
                             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
                             currentPhotoUri = uri
                             clickedDate = date
                             cameraLauncher.launch(uri)
+                        }
+                    },
+                    onDateLongClick = { date ->
+                        if (uiState.selfiesData[date] != null) {
+                            viewModel.deleteSelfie(date)
                         }
                     }
                 )
@@ -170,28 +186,43 @@ fun StreakScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Legend ──
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "Less",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                HeatMapLegend()
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "More",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+
+    if (showHologramForPath != null && hologramDate != null) {
+        Dialog(onDismissRequest = { showHologramForPath = null }) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(0.7f)
+                    .padding(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = hologramDate.toString(),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    AsyncImage(
+                        model = showHologramForPath,
+                        contentDescription = "Hologram Selfie",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                }
+            }
         }
     }
 }
@@ -242,22 +273,22 @@ private fun StreakStatCard(
 
 @Composable
 private fun HeatMapLegend() {
-    val themeMode = com.aspharier.doworkoutdaily.ui.theme.LocalThemeMode.current
-    val colors = if (themeMode == com.aspharier.doworkoutdaily.ui.theme.ThemeMode.AMOLED_BLACK) {
+    val themeMode = LocalThemeMode.current
+    val colors = if (themeMode == ThemeMode.AMOLED_BLACK) {
         listOf(
-            com.aspharier.doworkoutdaily.ui.theme.HeatmapAmoledEmpty,
-            com.aspharier.doworkoutdaily.ui.theme.HeatmapAmoledLevel1,
-            com.aspharier.doworkoutdaily.ui.theme.HeatmapAmoledLevel2,
-            com.aspharier.doworkoutdaily.ui.theme.HeatmapAmoledLevel3,
-            com.aspharier.doworkoutdaily.ui.theme.HeatmapAmoledLevel4
+            HeatmapAmoledEmpty,
+            HeatmapAmoledLevel1,
+            HeatmapAmoledLevel2,
+            HeatmapAmoledLevel3,
+            HeatmapAmoledLevel4
         )
     } else {
         listOf(
-            com.aspharier.doworkoutdaily.ui.theme.HeatmapBlossomEmpty,
-            com.aspharier.doworkoutdaily.ui.theme.HeatmapBlossomLevel1,
-            com.aspharier.doworkoutdaily.ui.theme.HeatmapBlossomLevel2,
-            com.aspharier.doworkoutdaily.ui.theme.HeatmapBlossomLevel3,
-            com.aspharier.doworkoutdaily.ui.theme.HeatmapBlossomLevel4
+            HeatmapBlossomEmpty,
+            HeatmapBlossomLevel1,
+            HeatmapBlossomLevel2,
+            HeatmapBlossomLevel3,
+            HeatmapBlossomLevel4
         )
     }
 
@@ -267,23 +298,11 @@ private fun HeatMapLegend() {
                 modifier = Modifier
                     .size(14.dp)
                     .padding(0.5.dp)
-                    .then(
-                        Modifier
-                            .fillMaxSize()
-                            .then(
-                                Modifier
-                                    .aspectRatio(1f)
-                                    .then(
-                                        Modifier
-                                            .padding(0.dp)
-                                    )
-                            )
-                    )
             ) {
-                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
                     drawRoundRect(
                         color = color,
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx())
+                        cornerRadius = CornerRadius(3.dp.toPx())
                     )
                 }
             }

@@ -49,6 +49,17 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val fullScreenIntent = Intent(context, AlarmActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(AlarmScheduler.EXTRA_TONE_URI, toneUri)
+        }
+        val fullScreenPendingIntent = PendingIntent.getActivity(
+            context,
+            1,
+            fullScreenIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val motivationalMessages = listOf(
             "Time to get moving! 💪",
             "Your body is ready. Are you? 🔥",
@@ -65,17 +76,11 @@ class NotificationHelper(private val context: Context) {
             .setContentTitle("DoWorkoutDaily")
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setContentIntent(pendingIntent)
+            .setFullScreenIntent(fullScreenPendingIntent, true)
             .setAutoCancel(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-
-        if (!toneUri.isNullOrEmpty()) {
-            try {
-                builder.setSound(Uri.parse(toneUri))
-            } catch (_: Exception) {
-                // Use default sound
-            }
-        }
 
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.notify(NOTIFICATION_ID, builder.build())

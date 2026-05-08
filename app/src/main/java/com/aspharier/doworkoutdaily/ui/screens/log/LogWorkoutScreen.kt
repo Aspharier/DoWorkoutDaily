@@ -56,7 +56,6 @@ fun LogWorkoutScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -71,7 +70,7 @@ fun LogWorkoutScreen(
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
-                modifier = Modifier.height(320.dp),
+                modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -117,8 +116,13 @@ fun LogWorkoutScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ── Duration ──
-            Text(
+            Column(
+                modifier = Modifier
+                    .weight(1.5f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // ── Duration ──
+                Text(
                 text = "Duration",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -287,7 +291,8 @@ fun LogWorkoutScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
     }
 }

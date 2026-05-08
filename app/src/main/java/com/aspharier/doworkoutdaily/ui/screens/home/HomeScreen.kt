@@ -188,27 +188,18 @@ private fun StreakHeroCard(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Fire Lottie animation
-                if (streak > 0) {
-                    val composition by rememberLottieComposition(
-                        LottieCompositionSpec.Asset("Fire.json")
-                    )
-                    val progress by animateLottieCompositionAsState(
-                        composition,
-                        iterations = LottieConstants.IterateForever
-                    )
-                    LottieAnimation(
-                        composition = composition,
-                        progress = { progress },
-                        modifier = Modifier.size(100.dp)
-                    )
-                } else {
-                    // Dimmed state when no streak
-                    Text(
-                        text = "🔥",
-                        fontSize = 64.sp,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
+                val composition by rememberLottieComposition(
+                    LottieCompositionSpec.Asset("Fire.json")
+                )
+                val progress by animateLottieCompositionAsState(
+                    composition,
+                    iterations = LottieConstants.IterateForever
+                )
+                LottieAnimation(
+                    composition = composition,
+                    progress = { progress },
+                    modifier = Modifier.size(100.dp)
+                )
 
                 // Streak number with animated counter
                 val animatedStreak by animateIntAsState(

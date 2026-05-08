@@ -155,6 +155,14 @@ class WorkoutRepository(
         selfieDao.insertSelfie(DailySelfie(date.format(dateFormatter), imagePath))
     }
 
+    suspend fun deleteSelfie(date: LocalDate) {
+        val dateString = date.format(dateFormatter)
+        val selfie = selfieDao.getSelfieByDate(dateString)
+        if (selfie != null) {
+            selfieDao.deleteSelfie(selfie)
+        }
+    }
+
     suspend fun getSelfieByDate(date: LocalDate): DailySelfie? {
         return selfieDao.getSelfieByDate(date.format(dateFormatter))
     }
