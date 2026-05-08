@@ -86,19 +86,7 @@ fun StreakScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Streak Fire ──
-            val composition by rememberLottieComposition(
-                LottieCompositionSpec.Asset("Fire.json")
-            )
-            val progress by animateLottieCompositionAsState(
-                composition,
-                iterations = LottieConstants.IterateForever
-            )
-            LottieAnimation(
-                composition = composition,
-                progress = { progress },
-                modifier = Modifier.size(80.dp)
-            )
+
 
             // ── Stats Grid ──
             Row(
@@ -191,14 +179,16 @@ fun StreakScreen(
     }
 
     if (showHologramForPath != null && hologramDate != null) {
-        Dialog(onDismissRequest = { showHologramForPath = null }) {
+        Dialog(
+            onDismissRequest = { showHologramForPath = null },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(0.7f)
-                    .padding(16.dp),
+                    .fillMaxWidth(0.92f)
+                    .aspectRatio(0.65f),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Column(
