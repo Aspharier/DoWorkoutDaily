@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import coil3.compose.AsyncImage
@@ -135,11 +136,13 @@ private fun MonthGrid(
                         val selfiePath = selfiesData[date]
                         val isToday = date == today
                         val isFuture = date.isAfter(today)
+                        val isPast = date.isBefore(today)
 
                         HeatMapCell(
                             count = if (isFuture) -1 else count,
                             selfiePath = selfiePath,
                             isToday = isToday,
+                            isPast = isPast,
                             themeMode = themeMode,
                             modifier = Modifier
                                 .weight(1f)
@@ -170,6 +173,7 @@ private fun HeatMapCell(
     count: Int,
     selfiePath: String?,
     isToday: Boolean,
+    isPast: Boolean,
     themeMode: ThemeMode,
     modifier: Modifier = Modifier
 ) {
@@ -209,7 +213,16 @@ private fun HeatMapCell(
                 modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)),
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
             )
-        } else if (isToday) {
+        }
+        
+        if (isPast && (count == 0 || selfiePath == null)) {
+            Icon(
+                imageVector = Icons.Rounded.Close,
+                contentDescription = "Missed",
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+            )
+        } else if (isToday && selfiePath == null) {
             Icon(
                 imageVector = Icons.Rounded.CameraAlt,
                 contentDescription = "Take Selfie",

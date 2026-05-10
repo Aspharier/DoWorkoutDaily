@@ -46,6 +46,7 @@ fun StreakScreen(
     var clickedDate by remember { mutableStateOf<LocalDate?>(null) }
     var showHologramForPath by remember { mutableStateOf<String?>(null) }
     var hologramDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showDeleteDialogForDate by remember { mutableStateOf<LocalDate?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -166,7 +167,7 @@ fun StreakScreen(
                     },
                     onDateLongClick = { date ->
                         if (uiState.selfiesData[date] != null) {
-                            viewModel.deleteSelfie(date)
+                            showDeleteDialogForDate = date
                         }
                     }
                 )
@@ -214,6 +215,37 @@ fun StreakScreen(
                 }
             }
         }
+    }
+
+    if (showDeleteDialogForDate != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialogForDate = null },
+            title = {
+                Text(text = "Delete Selfie")
+            },
+            text = {
+                Text(text = "Are you sure you want to delete this workout selfie?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialogForDate?.let { date ->
+                            viewModel.deleteSelfie(date)
+                        }
+                        showDeleteDialogForDate = null
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialogForDate = null }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
