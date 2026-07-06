@@ -1,7 +1,7 @@
 package com.aspharier.doworkoutdaily.ui.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
@@ -18,7 +18,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aspharier.doworkoutdaily.ui.theme.*
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -32,6 +31,10 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import coil3.compose.AsyncImage
+import androidx.compose.foundation.border
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -69,15 +72,31 @@ fun HeatMapCalendar(
             }
         }
 
-        MonthGrid(
-            yearMonth = currentMonth,
-            workoutDates = workoutDates,
-            selfiesData = selfiesData,
-            today = today,
-            themeMode = themeMode,
-            onDateClick = onDateClick,
-            onDateLongClick = onDateLongClick
-        )
+        AnimatedContent(
+            targetState = currentMonth,
+            transitionSpec = {
+                if (targetState.isAfter(initialState)) {
+                    (slideInHorizontally { width -> width } + fadeIn(tween(220))).togetherWith(
+                        slideOutHorizontally { width -> -width } + fadeOut(tween(220))
+                    )
+                } else {
+                    (slideInHorizontally { width -> -width } + fadeIn(tween(220))).togetherWith(
+                        slideOutHorizontally { width -> width } + fadeOut(tween(220))
+                    )
+                }
+            },
+            label = "month_transition"
+        ) { targetMonth ->
+            MonthGrid(
+                yearMonth = targetMonth,
+                workoutDates = workoutDates,
+                selfiesData = selfiesData,
+                today = today,
+                themeMode = themeMode,
+                onDateClick = onDateClick,
+                onDateLongClick = onDateLongClick
+            )
+        }
     }
 }
 
@@ -98,16 +117,19 @@ private fun MonthGrid(
 
     Column {
         // Day headers
+        val daysOfWeekFull = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            listOf("M", "T", "W", "T", "F", "S", "S").forEach { day ->
+            daysOfWeekFull.forEach { dayFull ->
                 Text(
-                    text = day,
+                    text = dayFull.take(1),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics { contentDescription = dayFull },
                     textAlign = TextAlign.Center,
                     fontSize = 9.sp
                 )
@@ -117,7 +139,6 @@ private fun MonthGrid(
         Spacer(modifier = Modifier.height(4.dp))
 
         // Calendar grid
-        var dayCounter = 1
         val totalCells = daysInMonth + (startDayOfWeek - 1)
         val rows = (totalCells + 6) / 7
 
@@ -139,6 +160,7 @@ private fun MonthGrid(
                         val isPast = date.isBefore(today)
 
                         HeatMapCell(
+                            dayNumber = dayNumber,
                             count = if (isFuture) -1 else count,
                             selfiePath = selfiePath,
                             isToday = isToday,
@@ -170,6 +192,7 @@ private fun MonthGrid(
 
 @Composable
 private fun HeatMapCell(
+    dayNumber: Int,
     count: Int,
     selfiePath: String?,
     isToday: Boolean,
@@ -192,16 +215,45 @@ private fun HeatMapCell(
         label = "heatmap_cell"
     )
 
+    val borderAlpha by if (isToday) {
+        val infiniteTransition = rememberInfiniteTransition(label = "today_pulse")
+        infiniteTransition.animateFloat(
+            initialValue = 0.3f,
+            targetValue = 1.0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1200, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "border_alpha"
+        )
+    } else {
+        remember { mutableStateOf(1.0f) }
+    }
+
+    val cellDescription = when {
+        count < 0 -> "Future date"
+        isToday -> "Today" + (if (selfiePath != null) ", selfie logged" else "") + (if (count == 0) ", no workouts yet" else ", $count workouts")
+        isPast && count == 0 && selfiePath == null -> "Day $dayNumber, missed workout"
+        else -> "Day $dayNumber" + (if (selfiePath != null) ", selfie logged" else "") + ", $count workouts"
+    }
+
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(3.dp))
             .background(animatedColor)
+            .semantics { contentDescription = cellDescription }
             .then(
                 if (isToday) {
-                    Modifier.background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(3.dp)
-                    )
+                    Modifier
+                        .background(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(3.dp)
+                        )
+                        .border(
+                            width = 1.5.dp,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = borderAlpha),
+                            shape = RoundedCornerShape(3.dp)
+                        )
                 } else Modifier
             ),
         contentAlignment = Alignment.Center
@@ -214,8 +266,8 @@ private fun HeatMapCell(
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
             )
         }
-        
-        if (isPast && (count == 0 || selfiePath == null)) {
+
+        if (isPast && count == 0 && selfiePath == null) {
             Icon(
                 imageVector = Icons.Rounded.Close,
                 contentDescription = "Missed",
@@ -228,6 +280,24 @@ private fun HeatMapCell(
                 contentDescription = "Take Selfie",
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        // Day number label
+        if (count >= 0) { // Not future
+            Text(
+                text = "$dayNumber",
+                fontSize = 7.sp,
+                color = if (isToday)
+                    MaterialTheme.colorScheme.primary
+                else if (count > 0 || selfiePath != null)
+                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(2.dp),
+                fontWeight = if (isToday) FontWeight.Bold else null
             )
         }
     }

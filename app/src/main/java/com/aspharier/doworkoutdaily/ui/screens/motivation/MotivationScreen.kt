@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import androidx.compose.ui.graphics.painter.ColorPainter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,7 +78,9 @@ fun MotivationScreen(
                         .fillMaxWidth()
                         .height(220.dp)
                         .clip(RoundedCornerShape(20.dp)),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    placeholder = ColorPainter(MaterialTheme.colorScheme.surfaceVariant),
+                    error = ColorPainter(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                 )
             }
 
@@ -137,7 +140,7 @@ fun MotivationScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Refresh,
-                        contentDescription = null,
+                        contentDescription = "Get new quote",
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -158,7 +161,7 @@ fun MotivationScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Share,
-                        contentDescription = null,
+                        contentDescription = "Share quote",
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -195,7 +198,7 @@ fun MotivationScreen(
                         "Rest days are part of the process.",
                         "Celebrate small wins along the way."
                     )
-                    val tipIndex = remember { (System.currentTimeMillis() / 86400000).toInt() % tips.size }
+                    val tipIndex = remember { java.time.LocalDate.now().dayOfYear % tips.size }
 
                     Text(
                         text = tips[tipIndex],

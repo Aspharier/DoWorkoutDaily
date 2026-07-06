@@ -25,7 +25,15 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* Permission result handled */ }
+    ) { isGranted ->
+        if (!isGranted) {
+            android.widget.Toast.makeText(
+                this,
+                "Notifications disabled. Workout reminders will not be shown.",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

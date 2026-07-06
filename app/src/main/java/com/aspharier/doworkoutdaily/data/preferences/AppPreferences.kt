@@ -24,6 +24,7 @@ class AppPreferences(private val context: Context) {
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
         when (prefs[THEME_MODE]) {
             ThemeMode.BLOSSOM_LIGHT.name -> ThemeMode.BLOSSOM_LIGHT
+            ThemeMode.SYSTEM.name -> ThemeMode.SYSTEM
             else -> ThemeMode.AMOLED_BLACK
         }
     }

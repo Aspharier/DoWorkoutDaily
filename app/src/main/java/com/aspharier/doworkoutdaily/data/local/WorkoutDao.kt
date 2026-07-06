@@ -36,4 +36,12 @@ interface WorkoutDao {
 
     @Query("SELECT COUNT(*) FROM workout_logs")
     fun getTotalWorkouts(): Flow<Int>
+
+    @Query("SELECT date, COUNT(*) as count FROM workout_logs WHERE date BETWEEN :startDate AND :endDate GROUP BY date ORDER BY date ASC")
+    fun getWorkoutCountsBetween(startDate: String, endDate: String): Flow<List<DateCount>>
 }
+
+data class DateCount(
+    val date: String,
+    val count: Int
+)

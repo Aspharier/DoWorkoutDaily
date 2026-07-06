@@ -81,6 +81,10 @@ class SettingsViewModel(
     fun setAlarmToneUri(uri: String) {
         viewModelScope.launch {
             preferences.setAlarmToneUri(uri)
+            val state = uiState.value
+            if (state.reminderEnabled) {
+                alarmScheduler.scheduleAlarm(state.reminderHour, state.reminderMinute, uri)
+            }
         }
     }
 

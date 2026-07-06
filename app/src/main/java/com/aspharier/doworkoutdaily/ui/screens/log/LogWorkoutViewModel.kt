@@ -22,7 +22,8 @@ data class LogWorkoutUiState(
     val weight: String = "",
     val showOptionalFields: Boolean = false,
     val isSaving: Boolean = false,
-    val isSaved: Boolean = false
+    val isSaved: Boolean = false,
+    val showTypeError: Boolean = false
 )
 
 class LogWorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() {
@@ -31,7 +32,7 @@ class LogWorkoutViewModel(private val repository: WorkoutRepository) : ViewModel
     val uiState: StateFlow<LogWorkoutUiState> = _uiState.asStateFlow()
 
     fun selectType(type: WorkoutType) {
-        _uiState.value = _uiState.value.copy(selectedType = type)
+        _uiState.value = _uiState.value.copy(selectedType = type, showTypeError = false)
     }
 
     fun setDuration(duration: Int) {
@@ -60,7 +61,10 @@ class LogWorkoutViewModel(private val repository: WorkoutRepository) : ViewModel
 
     fun saveWorkout(onSaved: () -> Unit) {
         val state = _uiState.value
-        if (state.selectedType == null) return
+        if (state.selectedType == null) {
+            _uiState.value = state.copy(showTypeError = true)
+            return
+        }
 
         _uiState.value = state.copy(isSaving = true)
 

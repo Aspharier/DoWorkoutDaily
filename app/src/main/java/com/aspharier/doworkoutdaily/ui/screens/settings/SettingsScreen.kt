@@ -101,6 +101,14 @@ fun SettingsScreen(
                         selected = uiState.themeMode == ThemeMode.BLOSSOM_LIGHT,
                         onClick = { viewModel.setThemeMode(ThemeMode.BLOSSOM_LIGHT) }
                     )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), modifier = Modifier.padding(horizontal = 16.dp))
+                    ThemeOption(
+                        title = "Follow System",
+                        subtitle = "Match your device theme",
+                        emoji = "📱",
+                        selected = uiState.themeMode == ThemeMode.SYSTEM,
+                        onClick = { viewModel.setThemeMode(ThemeMode.SYSTEM) }
+                    )
                 }
             }
 
@@ -140,7 +148,7 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth().clickable { showTimePicker = true }.padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Rounded.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Rounded.Schedule, contentDescription = "Schedule", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("Time", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
@@ -150,7 +158,7 @@ fun SettingsScreen(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
-                            Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.Rounded.ChevronRight, contentDescription = "Select time", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), modifier = Modifier.padding(horizontal = 16.dp))
@@ -171,7 +179,7 @@ fun SettingsScreen(
                             }.padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Rounded.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Rounded.MusicNote, contentDescription = "Alarm tone", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("Alarm Tone", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
@@ -183,7 +191,7 @@ fun SettingsScreen(
                                 } else "Default"
                                 Text(toneName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                             }
-                            Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.Rounded.ChevronRight, contentDescription = "Select tone", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -218,7 +226,7 @@ fun SettingsScreen(
         val timePickerState = rememberTimePickerState(
             initialHour = uiState.reminderHour,
             initialMinute = uiState.reminderMinute,
-            is24Hour = true
+            is24Hour = android.text.format.DateFormat.is24HourFormat(context)
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },

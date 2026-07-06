@@ -3,7 +3,9 @@ package com.aspharier.doworkoutdaily.navigation
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,10 +40,9 @@ fun AppNavigation(
     val navController = rememberNavController()
 
     val bottomNavItems = listOf(
-        BottomNavItem(Screen.Home, "Home", Icons.Rounded.Home, Icons.Rounded.Home),
-        BottomNavItem(Screen.LogWorkout, "Log", Icons.Rounded.Add, Icons.Rounded.Add),
-        BottomNavItem(Screen.Streak, "Streak", Icons.Rounded.LocalFireDepartment, Icons.Rounded.LocalFireDepartment),
-        BottomNavItem(Screen.Motivation, "Motivate", Icons.Rounded.AutoAwesome, Icons.Rounded.AutoAwesome),
+        BottomNavItem(Screen.Home, "Home", Icons.Outlined.Home, Icons.Rounded.Home),
+        BottomNavItem(Screen.Streak, "Streak", Icons.Outlined.LocalFireDepartment, Icons.Rounded.LocalFireDepartment),
+        BottomNavItem(Screen.Motivation, "Motivate", Icons.Outlined.AutoAwesome, Icons.Rounded.AutoAwesome),
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -51,9 +52,34 @@ fun AppNavigation(
         currentDestination?.hierarchy?.any { it.route == item.screen.route } == true
     }
 
+    val showFab = showBottomBar // Show FAB on the same screens as bottom bar
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
+        floatingActionButton = {
+            if (showFab) {
+                FloatingActionButton(
+                    onClick = {
+                        navController.navigate(Screen.LogWorkout.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 6.dp
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = "Log Workout",
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+        },
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar(
@@ -139,6 +165,9 @@ fun AppNavigation(
             composable(Screen.LogWorkout.route) {
                 LogWorkoutScreen(
                     repository = repository,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
                     onWorkoutSaved = {
                         navController.popBackStack()
                     }

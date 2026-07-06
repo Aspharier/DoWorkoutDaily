@@ -10,7 +10,8 @@ import androidx.compose.runtime.compositionLocalOf
 
 enum class ThemeMode {
     AMOLED_BLACK,
-    BLOSSOM_LIGHT
+    BLOSSOM_LIGHT,
+    SYSTEM
 }
 
 val LocalThemeMode = compositionLocalOf { ThemeMode.AMOLED_BLACK }
@@ -60,12 +61,18 @@ fun DoWorkoutDailyTheme(
     themeMode: ThemeMode = ThemeMode.AMOLED_BLACK,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when (themeMode) {
-        ThemeMode.AMOLED_BLACK -> AmoledColorScheme
-        ThemeMode.BLOSSOM_LIGHT -> BlossomColorScheme
+    val resolvedMode = when (themeMode) {
+        ThemeMode.SYSTEM -> if (isSystemInDarkTheme()) ThemeMode.AMOLED_BLACK else ThemeMode.BLOSSOM_LIGHT
+        else -> themeMode
     }
 
-    CompositionLocalProvider(LocalThemeMode provides themeMode) {
+    val colorScheme = when (resolvedMode) {
+        ThemeMode.AMOLED_BLACK -> AmoledColorScheme
+        ThemeMode.BLOSSOM_LIGHT -> BlossomColorScheme
+        else -> AmoledColorScheme // Fallback, shouldn't reach here
+    }
+
+    CompositionLocalProvider(LocalThemeMode provides resolvedMode) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = AppTypography,

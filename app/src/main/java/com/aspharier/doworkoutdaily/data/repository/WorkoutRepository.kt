@@ -56,11 +56,11 @@ class WorkoutRepository(
      * Returns a map of date strings to workout counts for heatmap display.
      */
     fun getHeatmapData(startDate: LocalDate, endDate: LocalDate): Flow<Map<String, Int>> {
-        return dao.getWorkoutDatesBetween(
+        return dao.getWorkoutCountsBetween(
             startDate.format(dateFormatter),
             endDate.format(dateFormatter)
-        ).map { dates ->
-            dates.groupingBy { it }.eachCount()
+        ).map { dateCounts ->
+            dateCounts.associate { it.date to it.count }
         }
     }
 

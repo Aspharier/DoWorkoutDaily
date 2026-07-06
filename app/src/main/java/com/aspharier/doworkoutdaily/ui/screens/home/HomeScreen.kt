@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.airbnb.lottie.compose.*
 import com.aspharier.doworkoutdaily.data.repository.WorkoutRepository
+import com.aspharier.doworkoutdaily.ui.components.shimmerEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,109 +61,163 @@ fun HomeScreen(
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ── Streak Hero Section ──
-            StreakHeroCard(
-                streak = uiState.currentStreak,
-                hasWorkedOutToday = uiState.hasWorkedOutToday
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── Today's Status ──
-            TodayStatusCard(
-                hasWorkedOutToday = uiState.hasWorkedOutToday,
-                workoutCount = uiState.todayWorkouts.size,
-                onLogWorkout = onNavigateToLog
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // ── Quick Stats Row ──
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+        if (uiState.isLoading) {
+            HomeScreenSkeleton(paddingValues = paddingValues)
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                StatCard(
-                    title = "Streak",
-                    value = "${uiState.currentStreak}",
-                    emoji = "🔥",
-                    isStreak = true,
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    title = "Total",
-                    value = "${uiState.totalWorkouts}",
-                    emoji = "💪",
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    title = "This Week",
-                    value = "${uiState.thisWeekCount}",
-                    emoji = "📅",
-                    modifier = Modifier.weight(1f)
-                )
-            }
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
+                // ── Streak Hero Section ──
+                StreakHeroCard(
+                    streak = uiState.currentStreak,
+                    hasWorkedOutToday = uiState.hasWorkedOutToday
+                )
 
-            // ── Recent Activity ──
-            if (uiState.todayWorkouts.isNotEmpty()) {
-                Card(
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ── Today's Status ──
+                TodayStatusCard(
+                    hasWorkedOutToday = uiState.hasWorkedOutToday,
+                    workoutCount = uiState.todayWorkouts.size,
+                    onLogWorkout = onNavigateToLog
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // ── Quick Stats Row ──
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Today's Workouts",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    StatCard(
+                        title = "Longest",
+                        value = "${uiState.longestStreak}",
+                        emoji = "🏆",
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatCard(
+                        title = "Total",
+                        value = "${uiState.totalWorkouts}",
+                        emoji = "💪",
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatCard(
+                        title = "This Week",
+                        value = "${uiState.thisWeekCount}",
+                        emoji = "📅",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ── Recent Activity ──
+                if (uiState.todayWorkouts.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        uiState.todayWorkouts.forEach { workout ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                val wType = com.aspharier.doworkoutdaily.data.model.WorkoutType.fromName(workout.workoutType)
-                                Text(
-                                    text = wType.emoji,
-                                    fontSize = 20.sp
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Today's Workouts",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            uiState.todayWorkouts.forEach { workout ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val wType = com.aspharier.doworkoutdaily.data.model.WorkoutType.fromName(workout.workoutType)
                                     Text(
-                                        text = wType.displayName,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        text = wType.emoji,
+                                        fontSize = 20.sp
                                     )
-                                    Text(
-                                        text = "${workout.durationMinutes} min",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = wType.displayName,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "${workout.durationMinutes} min",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeScreenSkeleton(paddingValues: PaddingValues) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(horizontal = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Hero skeleton
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .shimmerEffect()
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Status skeleton
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .shimmerEffect()
+        )
+        
+        Spacer(modifier = Modifier.height(20.dp))
+        
+        // Stats row skeleton
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            repeat(3) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(100.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .shimmerEffect()
+                )
+            }
         }
     }
 }
@@ -187,40 +243,64 @@ private fun StreakHeroCard(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Fire Lottie animation
-                val composition by rememberLottieComposition(
-                    LottieCompositionSpec.Asset("Fire.json")
-                )
-                val progress by animateLottieCompositionAsState(
-                    composition,
-                    iterations = LottieConstants.IterateForever
-                )
-                LottieAnimation(
-                    composition = composition,
-                    progress = { progress },
-                    modifier = Modifier.size(100.dp)
-                )
+                if (streak == 0) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.DirectionsRun,
+                        contentDescription = "Workout progress tracker",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(80.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Start Your Streak!",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Log a workout today to begin your journey",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    // Fire Lottie animation
+                    val composition by rememberLottieComposition(
+                        LottieCompositionSpec.Asset("Fire.json")
+                    )
+                    val progress by animateLottieCompositionAsState(
+                        composition,
+                        iterations = LottieConstants.IterateForever
+                    )
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier.size(100.dp)
+                    )
 
-                // Streak number with animated counter
-                val animatedStreak by animateIntAsState(
-                    targetValue = streak,
-                    animationSpec = tween(600),
-                    label = "streak_counter"
-                )
+                    // Streak number with animated counter
+                    val animatedStreak by animateIntAsState(
+                        targetValue = streak,
+                        animationSpec = tween(600),
+                        label = "streak_counter"
+                    )
 
-                Text(
-                    text = "$animatedStreak",
-                    style = MaterialTheme.typography.displayLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 72.sp
-                )
+                    Text(
+                        text = "$animatedStreak",
+                        style = MaterialTheme.typography.displayLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 72.sp
+                    )
 
-                Text(
-                    text = if (streak == 1) "day streak" else "day streak",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    Text(
+                        text = if (streak == 1) "day streak" else "days streak",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 if (hasWorkedOutToday) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -230,7 +310,7 @@ private fun StreakHeroCard(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.CheckCircle,
-                            contentDescription = null,
+                            contentDescription = "Workout completed today",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
@@ -290,7 +370,7 @@ private fun TodayStatusCard(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Add,
-                    contentDescription = null,
+                    contentDescription = "Log workout button icon",
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
@@ -305,8 +385,7 @@ private fun StatCard(
     title: String,
     value: String,
     emoji: String,
-    modifier: Modifier = Modifier,
-    isStreak: Boolean = false
+    modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier,
@@ -321,22 +400,7 @@ private fun StatCard(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (isStreak) {
-                val composition by rememberLottieComposition(
-                    LottieCompositionSpec.Asset("Fire.json")
-                )
-                val progress by animateLottieCompositionAsState(
-                    composition,
-                    iterations = LottieConstants.IterateForever
-                )
-                LottieAnimation(
-                    composition = composition,
-                    progress = { progress },
-                    modifier = Modifier.size(32.dp)
-                )
-            } else {
-                Text(text = emoji, fontSize = 24.sp)
-            }
+            Text(text = emoji, fontSize = 24.sp)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = value,

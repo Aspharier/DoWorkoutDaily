@@ -1,5 +1,8 @@
 package com.aspharier.doworkoutdaily.ui.screens.streak
 
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -56,6 +59,16 @@ fun StreakScreen(
                 clickedDate?.let { date ->
                     viewModel.saveSelfie(date, uri.toString())
                 }
+            }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            currentPhotoUri?.let { uri ->
+                cameraLauncher.launch(uri)
             }
         }
     }
@@ -162,7 +175,11 @@ fun StreakScreen(
                             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
                             currentPhotoUri = uri
                             clickedDate = date
-                            cameraLauncher.launch(uri)
+                            if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                cameraLauncher.launch(uri)
+                            } else {
+                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                            }
                         }
                     },
                     onDateLongClick = { date ->
@@ -173,7 +190,35 @@ fun StreakScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Legend and hint
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Tap today to take a selfie",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Less",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    HeatMapLegend()
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "More",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -197,7 +242,7 @@ fun StreakScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = hologramDate.toString(),
+                        text = hologramDate?.format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy")) ?: "",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
@@ -205,7 +250,7 @@ fun StreakScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     AsyncImage(
                         model = showHologramForPath,
-                        contentDescription = "Hologram Selfie",
+                        contentDescription = "Workout selfie",
                         modifier = Modifier
                             .fillMaxSize()
                             .weight(1f)
