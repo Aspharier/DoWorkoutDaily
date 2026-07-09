@@ -14,86 +14,88 @@ val DmMono = FontFamily(
     Font(R.font.dmmono_medium, FontWeight.Medium),
 )
 
+val SansDisplay = FontFamily.SansSerif
+
 val AppTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = DmMono,
         fontWeight = FontWeight.Medium,
-        fontSize = 57.sp,
-        lineHeight = 64.sp,
-        letterSpacing = (-0.25).sp
+        fontSize = 68.sp,
+        lineHeight = 72.sp,
+        letterSpacing = (-0.04).sp
     ),
     displayMedium = TextStyle(
         fontFamily = DmMono,
         fontWeight = FontWeight.Medium,
-        fontSize = 45.sp,
-        lineHeight = 52.sp,
-        letterSpacing = 0.sp
+        fontSize = 40.sp,
+        lineHeight = 44.sp,
+        letterSpacing = (-0.03).sp
     ),
     displaySmall = TextStyle(
         fontFamily = DmMono,
         fontWeight = FontWeight.Normal,
-        fontSize = 36.sp,
-        lineHeight = 44.sp,
-        letterSpacing = 0.sp
+        fontSize = 32.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-0.03).sp
     ),
     headlineLarge = TextStyle(
-        fontFamily = DmMono,
-        fontWeight = FontWeight.Medium,
+        fontFamily = SansDisplay,
+        fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
         lineHeight = 40.sp,
-        letterSpacing = 0.sp
+        letterSpacing = (-0.02).sp
     ),
     headlineMedium = TextStyle(
-        fontFamily = DmMono,
-        fontWeight = FontWeight.Medium,
+        fontFamily = SansDisplay,
+        fontWeight = FontWeight.Bold,
         fontSize = 28.sp,
         lineHeight = 36.sp,
-        letterSpacing = 0.sp
+        letterSpacing = (-0.02).sp
     ),
     headlineSmall = TextStyle(
-        fontFamily = DmMono,
-        fontWeight = FontWeight.Normal,
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
-        letterSpacing = 0.sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = DmMono,
-        fontWeight = FontWeight.Medium,
+        fontFamily = SansDisplay,
+        fontWeight = FontWeight.Bold,
         fontSize = 22.sp,
         lineHeight = 28.sp,
-        letterSpacing = 0.sp
+        letterSpacing = (-0.02).sp
+    ),
+    titleLarge = TextStyle(
+        fontFamily = SansDisplay,
+        fontWeight = FontWeight.Bold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = (-0.01).sp
     ),
     titleMedium = TextStyle(
-        fontFamily = DmMono,
-        fontWeight = FontWeight.Medium,
+        fontFamily = SansDisplay,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 16.sp,
         lineHeight = 24.sp,
-        letterSpacing = 0.15.sp
+        letterSpacing = (-0.01).sp
     ),
     titleSmall = TextStyle(
-        fontFamily = DmMono,
-        fontWeight = FontWeight.Medium,
+        fontFamily = SansDisplay,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.1.sp
+        letterSpacing = (-0.01).sp
     ),
     bodyLarge = TextStyle(
-        fontFamily = DmMono,
+        fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     ),
     bodyMedium = TextStyle(
-        fontFamily = DmMono,
+        fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.25.sp
     ),
     bodySmall = TextStyle(
-        fontFamily = DmMono,
+        fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
         lineHeight = 16.sp,
@@ -104,20 +106,20 @@ val AppTypography = Typography(
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.1.sp
+        letterSpacing = 0.05.sp
     ),
     labelMedium = TextStyle(
         fontFamily = DmMono,
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.06.sp
     ),
     labelSmall = TextStyle(
         fontFamily = DmMono,
         fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
+        fontSize = 10.sp,
+        lineHeight = 14.sp,
+        letterSpacing = 0.12.sp
     )
 )

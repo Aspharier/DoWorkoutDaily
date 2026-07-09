@@ -1,40 +1,48 @@
 package com.aspharier.doworkoutdaily.ui.screens.streak
 
 import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
-
+import android.net.Uri
+import android.os.Environment
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.airbnb.lottie.compose.*
-import android.net.Uri
-import android.os.Environment
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.draw.clip
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import com.aspharier.doworkoutdaily.data.repository.WorkoutRepository
 import com.aspharier.doworkoutdaily.ui.components.HeatMapCalendar
 import com.aspharier.doworkoutdaily.ui.theme.*
-import coil3.compose.AsyncImage
-import androidx.compose.foundation.Canvas
-import androidx.compose.ui.geometry.CornerRadius
 import java.io.File
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,9 +55,7 @@ fun StreakScreen(
     
     var currentPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var clickedDate by remember { mutableStateOf<LocalDate?>(null) }
-    var showHologramForPath by remember { mutableStateOf<String?>(null) }
-    var hologramDate by remember { mutableStateOf<LocalDate?>(null) }
-    var showDeleteDialogForDate by remember { mutableStateOf<LocalDate?>(null) }
+    var selectedModalDate by remember { mutableStateOf<LocalDate?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -58,6 +64,11 @@ fun StreakScreen(
             currentPhotoUri?.let { uri ->
                 clickedDate?.let { date ->
                     viewModel.saveSelfie(date, uri.toString())
+                    // Refresh modal state if it's currently open
+                    if (selectedModalDate == date) {
+                        selectedModalDate = null
+                        selectedModalDate = date
+                    }
                 }
             }
         }
@@ -70,24 +81,71 @@ fun StreakScreen(
             currentPhotoUri?.let { uri ->
                 cameraLauncher.launch(uri)
             }
+        } else {
+            Toast.makeText(context, "Camera permission is required to take a selfie.", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    val launchCameraForDate = { date: LocalDate ->
+        val photoFile = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "selfie_${date}.jpg")
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
+        currentPhotoUri = uri
+        clickedDate = date
+        if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            cameraLauncher.launch(uri)
+        } else {
+            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+        }
+    }
+
+    val thisWeekCount = remember(uiState.heatmapData) {
+        val today = LocalDate.now()
+        val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        val sunday = monday.plusDays(6)
+        uiState.heatmapData.filterKeys { !it.isBefore(monday) && !it.isAfter(sunday) }.values.sum()
     }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = {
+            Row(
+                modifier = Modifier
+                    .fillModifierHeader()
+                    .statusBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
                     Text(
-                        "Your Streak",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Medium
+                        text = "Progress",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Streak",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                
+                IconButton(
+                    onClick = {
+                        launchCameraForDate(LocalDate.now())
+                    },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.CameraAlt,
+                        contentDescription = "Take today's selfie",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         Column(
@@ -100,279 +158,373 @@ fun StreakScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-
-
-            // ── Stats Grid ──
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StreakStatCard(
-                    label = "Current",
-                    value = uiState.currentStreak,
-                    emoji = "🔥",
-                    modifier = Modifier.weight(1f)
-                )
-                StreakStatCard(
-                    label = "Longest",
-                    value = uiState.longestStreak,
-                    emoji = "🏆",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StreakStatCard(
-                    label = "Total Days",
-                    value = uiState.totalDays,
-                    emoji = "📅",
-                    modifier = Modifier.weight(1f)
-                )
-                StreakStatCard(
-                    label = "Workouts",
-                    value = uiState.totalWorkouts,
-                    emoji = "💪",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // ── Heat Map ──
-            Text(
-                text = "Activity",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp)
+            // ── Streak Hero section ──
+            StreakHero(
+                currentStreak = uiState.currentStreak,
+                longestStreak = uiState.longestStreak
             )
 
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // ── Streak stats row (Total, This Week) ──
+            StreakStatsGrid(
+                totalWorkouts = uiState.totalWorkouts,
+                thisWeekCount = thisWeekCount
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ── Heat Map Grid ──
             Card(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                    containerColor = MaterialTheme.colorScheme.surface
+        ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
-                HeatMapCalendar(
-                    workoutDates = uiState.heatmapData,
-                    selfiesData = uiState.selfiesData,
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    onDateClick = { date ->
-                        val hasSelfie = uiState.selfiesData[date] != null
-                        if (hasSelfie) {
-                            showHologramForPath = uiState.selfiesData[date]
-                            hologramDate = date
-                        } else if (date == LocalDate.now()) {
-                            val photoFile = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "selfie_${date}.jpg")
-                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
-                            currentPhotoUri = uri
-                            clickedDate = date
-                            if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                                cameraLauncher.launch(uri)
-                            } else {
-                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                            }
+                        .padding(14.dp)
+                ) {
+                    HeatMapCalendar(
+                        workoutDates = uiState.heatmapData,
+                        selfiesData = uiState.selfiesData,
+                        modifier = Modifier.fillMaxWidth(),
+                        onDateClick = { date ->
+                            selectedModalDate = date
+                        },
+                        onDateLongClick = { date ->
+                            // Long click support deleted since delete is inside bottom sheet modal actions now!
                         }
-                    },
-                    onDateLongClick = { date ->
-                        if (uiState.selfiesData[date] != null) {
-                            showDeleteDialogForDate = date
-                        }
-                    }
-                )
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Legend and hint
+            // ── Selfie Hint ──
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
             ) {
+                Icon(
+                    imageVector = Icons.Rounded.CameraAlt,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(12.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Tap today to take a selfie",
+                    text = "Tap a day to view/add a selfie · delete inside modal",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Less",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    HeatMapLegend()
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "More",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
 
-    if (showHologramForPath != null && hologramDate != null) {
-        Dialog(
-            onDismissRequest = { showHologramForPath = null },
-            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    // ── V2 Selfie Bottom Sheet Modal ──
+    if (selectedModalDate != null) {
+        val modalDate = selectedModalDate!!
+        val selfiePath = uiState.selfiesData[modalDate]
+        val isFuture = modalDate.isAfter(LocalDate.now())
+        
+        ModalBottomSheet(
+            onDismissRequest = { selectedModalDate = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            tonalElevation = 0.dp,
+            dragHandle = {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .size(36.dp, 4.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                )
+            }
         ) {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth(0.92f)
-                    .aspectRatio(0.65f),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    .fillMaxWidth()
+                    .padding(start = 18.dp, end = 18.dp, bottom = 24.dp)
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val dateFormatted = remember(modalDate) {
+                        modalDate.format(DateTimeFormatter.ofPattern("EEE · MMM dd", Locale.getDefault()))
+                    }
                     Text(
-                        text = hologramDate?.format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy")) ?: "",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                        text = dateFormatted,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    AsyncImage(
-                        model = showHologramForPath,
-                        contentDescription = "Workout selfie",
+                    IconButton(
+                        onClick = { selectedModalDate = null },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Preview Card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (selfiePath != null) {
+                        AsyncImage(
+                            model = selfiePath,
+                            contentDescription = "Selfie",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.CameraAlt,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (isFuture) "Future date — no selfie" else "No selfie for this day yet",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Delete Button
+                    Button(
+                        onClick = {
+                            viewModel.deleteSelfie(modalDate)
+                            selectedModalDate = null
+                        },
                         modifier = Modifier
-                            .fillMaxSize()
                             .weight(1f)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = selfiePath != null,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.error,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {
+                        Icon(Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Delete", style = MaterialTheme.typography.labelMedium)
+                    }
+
+                    // Take Selfie Button
+                    Button(
+                        onClick = {
+                            launchCameraForDate(modalDate)
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isFuture,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(Icons.Rounded.CameraAlt, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (selfiePath != null) "Replace" else "Take selfie",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
                 }
             }
         }
     }
-
-    if (showDeleteDialogForDate != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialogForDate = null },
-            title = {
-                Text(text = "Delete Selfie")
-            },
-            text = {
-                Text(text = "Are you sure you want to delete this workout selfie?")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialogForDate?.let { date ->
-                            viewModel.deleteSelfie(date)
-                        }
-                        showDeleteDialogForDate = null
-                    }
-                ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showDeleteDialogForDate = null }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
 }
 
 @Composable
-private fun StreakStatCard(
-    label: String,
-    value: Int,
-    emoji: String,
-    modifier: Modifier = Modifier
+private fun StreakHero(
+    currentStreak: Int,
+    longestStreak: Int
 ) {
-    val animatedValue by animateIntAsState(
-        targetValue = value,
-        animationSpec = tween(600),
-        label = "stat_$label"
-    )
-
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(text = emoji, fontSize = 24.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "$animatedValue",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
+            // Flame Badge
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.LocalFireDepartment,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+
+            // Streak Content
+            Column {
+                Row(
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = "$currentStreak",
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        lineHeight = 1.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (currentStreak == 1) "day streak" else "day streak", // Keep label matching V2
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "LONGEST · $longestStreak DAYS",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun HeatMapLegend() {
-    val themeMode = LocalThemeMode.current
-    val colors = if (themeMode == ThemeMode.AMOLED_BLACK) {
-        listOf(
-            HeatmapAmoledEmpty,
-            HeatmapAmoledLevel1,
-            HeatmapAmoledLevel2,
-            HeatmapAmoledLevel3,
-            HeatmapAmoledLevel4
-        )
-    } else {
-        listOf(
-            HeatmapBlossomEmpty,
-            HeatmapBlossomLevel1,
-            HeatmapBlossomLevel2,
-            HeatmapBlossomLevel3,
-            HeatmapBlossomLevel4
-        )
-    }
-
-    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        colors.forEach { color ->
-            Box(
+private fun StreakStatsGrid(
+    totalWorkouts: Int,
+    thisWeekCount: Int
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Card(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Column(
                 modifier = Modifier
-                    .size(14.dp)
-                    .padding(0.5.dp)
+                    .fillMaxWidth()
+                    .padding(12.dp)
             ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawRoundRect(
-                        color = color,
-                        cornerRadius = CornerRadius(3.dp.toPx())
+                Text(
+                    text = "Total workouts",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "$totalWorkouts",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
+            }
+        }
+
+        Card(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = "This week",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = "$thisWeekCount",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                    Text(
+                        text = "/6",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         }
     }
 }
+
+// Extension to avoid compilation error in header row
+private fun Modifier.fillModifierHeader(): Modifier = this.fillMaxWidth()

@@ -2,10 +2,12 @@ package com.aspharier.doworkoutdaily.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -13,28 +15,27 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.alpha
 import com.aspharier.doworkoutdaily.ui.theme.*
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
-
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import coil3.compose.AsyncImage
-import androidx.compose.foundation.border
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -52,23 +53,44 @@ fun HeatMapCalendar(
     Column(modifier = modifier) {
         // Navigation Header
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
-                Icon(Icons.Rounded.ChevronLeft, contentDescription = "Previous Month")
+            IconButton(
+                onClick = { currentMonth = currentMonth.minusMonths(1) },
+                modifier = Modifier
+                    .size(26.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp))
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ChevronLeft,
+                    contentDescription = "Previous Month",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(14.dp)
+                )
             }
             Text(
                 text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             IconButton(
                 onClick = { currentMonth = currentMonth.plusMonths(1) },
-                enabled = currentMonth.isBefore(YearMonth.now())
+                enabled = currentMonth.isBefore(YearMonth.now()),
+                modifier = Modifier
+                    .size(26.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp))
             ) {
-                Icon(Icons.Rounded.ChevronRight, contentDescription = "Next Month")
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = "Next Month",
+                    tint = if (currentMonth.isBefore(YearMonth.now())) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                    modifier = Modifier.size(14.dp)
+                )
             }
         }
 
@@ -113,11 +135,13 @@ private fun MonthGrid(
 ) {
     val firstDay = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
-    val startDayOfWeek = firstDay.dayOfWeek.value // 1 = Monday
+    
+    // Sunday-first offset: Mon=1, Tue=2... Sun=7 -> Sun=0, Mon=1...
+    val startDayOfWeek = firstDay.dayOfWeek.value % 7
 
     Column {
-        // Day headers
-        val daysOfWeekFull = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+        // Day headers (Sunday-first)
+        val daysOfWeekFull = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
@@ -139,7 +163,7 @@ private fun MonthGrid(
         Spacer(modifier = Modifier.height(4.dp))
 
         // Calendar grid
-        val totalCells = daysInMonth + (startDayOfWeek - 1)
+        val totalCells = daysInMonth + startDayOfWeek
         val rows = (totalCells + 6) / 7
 
         for (row in 0 until rows) {
@@ -149,7 +173,7 @@ private fun MonthGrid(
             ) {
                 for (col in 0 until 7) {
                     val cellIndex = row * 7 + col
-                    val dayNumber = cellIndex - (startDayOfWeek - 1) + 1
+                    val dayNumber = cellIndex - startDayOfWeek + 1
 
                     if (dayNumber in 1..daysInMonth) {
                         val date = yearMonth.atDay(dayNumber)
@@ -170,6 +194,9 @@ private fun MonthGrid(
                                 .weight(1f)
                                 .aspectRatio(1f)
                                 .padding(1.5.dp)
+                                .then(
+                                    if (isFuture) Modifier.alpha(0.2f) else Modifier
+                                )
                                 .combinedClickable(
                                     enabled = !isFuture,
                                     onClick = { onDateClick(date) },
@@ -201,12 +228,12 @@ private fun HeatMapCell(
     modifier: Modifier = Modifier
 ) {
     val baseColor = when {
-        count < 0 -> Color.Transparent // Future date
-        count == 0 -> if (themeMode == ThemeMode.AMOLED_BLACK) HeatmapAmoledEmpty else HeatmapBlossomEmpty
-        count == 1 -> if (themeMode == ThemeMode.AMOLED_BLACK) HeatmapAmoledLevel1 else HeatmapBlossomLevel1
-        count == 2 -> if (themeMode == ThemeMode.AMOLED_BLACK) HeatmapAmoledLevel2 else HeatmapBlossomLevel2
-        count == 3 -> if (themeMode == ThemeMode.AMOLED_BLACK) HeatmapAmoledLevel3 else HeatmapBlossomLevel3
-        else -> if (themeMode == ThemeMode.AMOLED_BLACK) HeatmapAmoledLevel4 else HeatmapBlossomLevel4
+        count < 0 -> if (themeMode == ThemeMode.AMOLED_BLACK) V2DarkHeat0 else V2LightHeat0
+        count == 0 -> if (themeMode == ThemeMode.AMOLED_BLACK) V2DarkHeat0 else V2LightHeat0
+        count == 1 -> if (themeMode == ThemeMode.AMOLED_BLACK) V2DarkHeat1 else V2LightHeat1
+        count == 2 -> if (themeMode == ThemeMode.AMOLED_BLACK) V2DarkHeat2 else V2LightHeat2
+        count == 3 -> if (themeMode == ThemeMode.AMOLED_BLACK) V2DarkHeat3 else V2LightHeat3
+        else -> if (themeMode == ThemeMode.AMOLED_BLACK) V2DarkHeat4 else V2LightHeat4
     }
 
     val animatedColor by animateColorAsState(
@@ -237,68 +264,95 @@ private fun HeatMapCell(
         else -> "Day $dayNumber" + (if (selfiePath != null) ", selfie logged" else "") + ", $count workouts"
     }
 
+    val outlineColor = MaterialTheme.colorScheme.primary
+
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(3.dp))
+            .clip(RoundedCornerShape(4.dp))
             .background(animatedColor)
             .semantics { contentDescription = cellDescription }
             .then(
                 if (isToday) {
-                    Modifier
-                        .background(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(3.dp)
-                        )
-                        .border(
-                            width = 1.5.dp,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = borderAlpha),
-                            shape = RoundedCornerShape(3.dp)
-                        )
+                    Modifier.border(
+                        width = 1.5.dp,
+                        color = outlineColor.copy(alpha = borderAlpha),
+                        shape = RoundedCornerShape(4.dp)
+                    )
                 } else Modifier
             ),
         contentAlignment = Alignment.Center
     ) {
         if (selfiePath != null) {
+            // Background Image
             AsyncImage(
                 model = selfiePath,
-                contentDescription = "Workout Selfie",
-                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)),
+                contentScale = ContentScale.Crop
+            )
+            // Shadow overlay at bottom
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)),
+                            startY = 10f
+                        )
+                    )
             )
         }
 
+        // Missed day diagonal line
         if (isPast && count == 0 && selfiePath == null) {
-            Icon(
-                imageVector = Icons.Rounded.Close,
-                contentDescription = "Missed",
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-            )
-        } else if (isToday && selfiePath == null) {
-            Icon(
-                imageVector = Icons.Rounded.CameraAlt,
-                contentDescription = "Take Selfie",
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary
+            val lineColor = if (themeMode == ThemeMode.AMOLED_BLACK) V2DarkTextMute else V2LightTextMute
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawLine(
+                    color = lineColor.copy(alpha = 0.5f),
+                    start = androidx.compose.ui.geometry.Offset(size.width * 0.22f, size.height * 0.78f),
+                    end = androidx.compose.ui.geometry.Offset(size.width * 0.78f, size.height * 0.22f),
+                    strokeWidth = 1.5.dp.toPx()
+                )
+            }
+        }
+
+        // Today's Camera Dot
+        if (isToday && selfiePath == null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(2.dp)
+                    .size(5.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
             )
         }
 
         // Day number label
         if (count >= 0) { // Not future
+            val textColor = if (selfiePath != null) {
+                Color.White
+            } else if (isToday) {
+                MaterialTheme.colorScheme.primary
+            } else if (count > 0) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            }
+            
             Text(
                 text = "$dayNumber",
-                fontSize = 7.sp,
-                color = if (isToday)
-                    MaterialTheme.colorScheme.primary
-                else if (count > 0 || selfiePath != null)
-                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                fontSize = 8.5.sp,
+                color = textColor,
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(2.dp),
-                fontWeight = if (isToday) FontWeight.Bold else null
+                    .then(
+                        if (selfiePath != null) Modifier.align(Alignment.BottomStart).padding(horizontal = 3.dp, vertical = 2.dp)
+                        else Modifier.align(Alignment.Center)
+                    ),
+                fontWeight = if (isToday || selfiePath != null) FontWeight.Bold else FontWeight.Normal
             )
         }
     }
 }
+
+

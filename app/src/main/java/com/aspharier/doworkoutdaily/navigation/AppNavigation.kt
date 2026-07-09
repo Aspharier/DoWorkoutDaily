@@ -2,14 +2,22 @@ package com.aspharier.doworkoutdaily.navigation
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -43,6 +51,7 @@ fun AppNavigation(
         BottomNavItem(Screen.Home, "Home", Icons.Outlined.Home, Icons.Rounded.Home),
         BottomNavItem(Screen.Streak, "Streak", Icons.Outlined.LocalFireDepartment, Icons.Rounded.LocalFireDepartment),
         BottomNavItem(Screen.Motivation, "Motivate", Icons.Outlined.AutoAwesome, Icons.Rounded.AutoAwesome),
+        BottomNavItem(Screen.Settings, "Settings", Icons.Outlined.Settings, Icons.Rounded.Settings)
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -52,77 +61,145 @@ fun AppNavigation(
         currentDestination?.hierarchy?.any { it.route == item.screen.route } == true
     }
 
-    val showFab = showBottomBar // Show FAB on the same screens as bottom bar
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = {
-            if (showFab) {
-                FloatingActionButton(
-                    onClick = {
-                        navController.navigate(Screen.LogWorkout.route) {
-                            launchSingleTop = true
-                        }
-                    },
-                    shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    elevation = FloatingActionButtonDefaults.elevation(
-                        defaultElevation = 6.dp
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = "Log Workout",
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-        },
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    tonalElevation = 0.dp
+                Box(
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
-                    bottomNavItems.forEach { item ->
-                        val selected = currentDestination?.hierarchy?.any {
-                            it.route == item.screen.route
-                        } == true
+                    // Pill-shaped TabBar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outline,
+                                shape = RoundedCornerShape(999.dp)
+                            )
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val leftItems = bottomNavItems.take(2)
+                        val rightItems = bottomNavItems.drop(2)
 
-                        NavigationBarItem(
-                            selected = selected,
+                        // Left 2 items (Home, Streak)
+                        leftItems.forEach { item ->
+                            val selected = currentDestination?.hierarchy?.any {
+                                it.route == item.screen.route
+                            } == true
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        navController.navigate(item.screen.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = if (selected) item.selectedIcon else item.icon,
+                                        contentDescription = item.label,
+                                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = item.label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Center spacer for the FAB (its space will overlap here)
+                        Spacer(modifier = Modifier.width(56.dp))
+
+                        // Right 2 items (Motivate, Settings)
+                        rightItems.forEach { item ->
+                            val selected = currentDestination?.hierarchy?.any {
+                                it.route == item.screen.route
+                            } == true
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        navController.navigate(item.screen.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = if (selected) item.selectedIcon else item.icon,
+                                        contentDescription = item.label,
+                                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = item.label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Floating Action Button centered exactly
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .offset(y = (-14).dp)
+                    ) {
+                        FloatingActionButton(
                             onClick = {
-                                navController.navigate(item.screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
+                                navController.navigate(Screen.LogWorkout.route) {
                                     launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
-                            icon = {
-                                Icon(
-                                    imageVector = if (selected) item.selectedIcon else item.icon,
-                                    contentDescription = item.label
-                                )
-                            },
-                            label = {
-                                Text(
-                                    text = item.label,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            shape = CircleShape,
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White,
+                            elevation = FloatingActionButtonDefaults.elevation(
+                                defaultElevation = 8.dp
+                            ),
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = "Log Workout",
+                                modifier = Modifier.size(24.dp)
                             )
-                        )
+                        }
                     }
                 }
             }
