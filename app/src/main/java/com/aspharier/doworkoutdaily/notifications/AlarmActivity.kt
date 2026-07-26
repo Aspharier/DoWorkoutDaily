@@ -22,7 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.aspharier.doworkoutdaily.ui.theme.DoWorkoutDailyTheme
+import com.aspharier.doworkoutdaily.ui.theme.GrindTheme
 
 class AlarmActivity : ComponentActivity() {
 
@@ -52,10 +52,10 @@ class AlarmActivity : ComponentActivity() {
         playAlarm(toneUriString)
 
         setContent {
-            DoWorkoutDailyTheme {
+            GrindTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = GrindTheme.colors.cream
                 ) {
                     AlarmScreen(onDismiss = {
                         stopAlarm()

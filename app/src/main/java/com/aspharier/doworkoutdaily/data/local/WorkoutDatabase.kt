@@ -4,17 +4,16 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.aspharier.doworkoutdaily.data.model.WorkoutLog
+import com.aspharier.doworkoutdaily.data.model.WorkoutEntry
+import com.aspharier.doworkoutdaily.data.model.WorkoutSession
 
 @Database(
-    entities = [WorkoutLog::class, com.aspharier.doworkoutdaily.data.model.DailySelfie::class],
-    version = 2,
+    entities = [WorkoutSession::class, WorkoutEntry::class],
+    version = 3,
     exportSchema = false
 )
 abstract class WorkoutDatabase : RoomDatabase() {
-
     abstract fun workoutDao(): WorkoutDao
-    abstract fun selfieDao(): SelfieDao
 
     companion object {
         @Volatile
@@ -25,10 +24,10 @@ abstract class WorkoutDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     WorkoutDatabase::class.java,
-                    "workout_database"
+                    "grind_workout_db"
                 )
-                .fallbackToDestructiveMigration()
-                .build()
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

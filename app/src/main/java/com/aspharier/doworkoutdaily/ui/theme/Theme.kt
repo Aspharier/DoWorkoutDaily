@@ -1,80 +1,65 @@
 package com.aspharier.doworkoutdaily.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import android.app.Activity
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
-enum class ThemeMode {
-    AMOLED_BLACK,
-    BLOSSOM_LIGHT,
-    SYSTEM
-}
-
-val LocalThemeMode = compositionLocalOf { ThemeMode.AMOLED_BLACK }
-
-private val AmoledColorScheme = darkColorScheme(
-    primary = V2DarkAccent,
-    onPrimary = V2DarkText,
-    primaryContainer = V2DarkSurface2,
-    onPrimaryContainer = V2DarkAccent,
-    secondary = V2DarkTextDim,
-    onSecondary = V2DarkBg,
-    secondaryContainer = V2DarkSurface3,
-    onSecondaryContainer = V2DarkText,
-    background = V2DarkBg,
-    onBackground = V2DarkText,
-    surface = V2DarkSurface,
-    onSurface = V2DarkText,
-    surfaceVariant = V2DarkSurface2,
-    onSurfaceVariant = V2DarkTextDim,
-    outline = V2DarkBorder,
-    error = V2DarkDanger,
-    onError = V2DarkText
+@Immutable
+data class GrindColors(
+    val cream: Color = Cream,
+    val ink: Color = Ink,
+    val acidLime: Color = AcidLime,
+    val hypeMagenta: Color = HypeMagenta,
+    val sky: Color = Sky,
+    val tangerine: Color = Tangerine,
+    val grape: Color = Grape,
+    val stone: Color = Stone,
+    val paper: Color = Paper
 )
 
-private val BlossomColorScheme = lightColorScheme(
-    primary = V2LightAccent,
-    onPrimary = V2LightSurface,
-    primaryContainer = V2LightSurface2,
-    onPrimaryContainer = V2LightAccent,
-    secondary = V2LightTextDim,
-    onSecondary = V2LightSurface,
-    secondaryContainer = V2LightSurface3,
-    onSecondaryContainer = V2LightText,
-    background = V2LightBg,
-    onBackground = V2LightText,
-    surface = V2LightSurface,
-    onSurface = V2LightText,
-    surfaceVariant = V2LightSurface2,
-    onSurfaceVariant = V2LightTextDim,
-    outline = V2LightBorder,
-    error = V2LightDanger,
-    onError = V2LightSurface
+val LocalGrindColors = staticCompositionLocalOf { GrindColors() }
+
+object GrindTheme {
+    val colors: GrindColors
+        @Composable
+        get() = LocalGrindColors.current
+}
+
+private val GrindColorScheme = lightColorScheme(
+    primary = AcidLime,
+    onPrimary = Ink,
+    secondary = HypeMagenta,
+    onSecondary = Color.White,
+    background = Cream,
+    onBackground = Ink,
+    surface = Cream,
+    onSurface = Ink
 )
 
 @Composable
-fun DoWorkoutDailyTheme(
-    themeMode: ThemeMode = ThemeMode.AMOLED_BLACK,
-    content: @Composable () -> Unit
-) {
-    val resolvedMode = when (themeMode) {
-        ThemeMode.SYSTEM -> if (isSystemInDarkTheme()) ThemeMode.AMOLED_BLACK else ThemeMode.BLOSSOM_LIGHT
-        else -> themeMode
+fun GrindTheme(content: @Composable () -> Unit) {
+    val colors = GrindColors()
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = Color.Transparent.toArgb()
+            window.navigationBarColor = Ink.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
+        }
     }
-
-    val colorScheme = when (resolvedMode) {
-        ThemeMode.AMOLED_BLACK -> AmoledColorScheme
-        ThemeMode.BLOSSOM_LIGHT -> BlossomColorScheme
-        else -> AmoledColorScheme
-    }
-
-    CompositionLocalProvider(LocalThemeMode provides resolvedMode) {
+    CompositionLocalProvider(LocalGrindColors provides colors) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = GrindColorScheme,
             typography = AppTypography,
             content = content
         )

@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
-import com.aspharier.doworkoutdaily.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -13,7 +12,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class AppPreferences(private val context: Context) {
 
     companion object {
-        private val THEME_MODE = stringPreferencesKey("theme_mode")
+        private val USER_NAME = stringPreferencesKey("user_name")
         private val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
         private val REMINDER_HOUR = intPreferencesKey("reminder_hour")
         private val REMINDER_MINUTE = intPreferencesKey("reminder_minute")
@@ -21,12 +20,8 @@ class AppPreferences(private val context: Context) {
         private val IS_FIRST_LAUNCH = booleanPreferencesKey("is_first_launch")
     }
 
-    val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
-        when (prefs[THEME_MODE]) {
-            ThemeMode.BLOSSOM_LIGHT.name -> ThemeMode.BLOSSOM_LIGHT
-            ThemeMode.SYSTEM.name -> ThemeMode.SYSTEM
-            else -> ThemeMode.AMOLED_BLACK
-        }
+    val userName: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[USER_NAME] ?: "champ"
     }
 
     val reminderEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -49,9 +44,9 @@ class AppPreferences(private val context: Context) {
         prefs[IS_FIRST_LAUNCH] ?: true
     }
 
-    suspend fun setThemeMode(mode: ThemeMode) {
+    suspend fun setUserName(name: String) {
         context.dataStore.edit { prefs ->
-            prefs[THEME_MODE] = mode.name
+            prefs[USER_NAME] = name
         }
     }
 

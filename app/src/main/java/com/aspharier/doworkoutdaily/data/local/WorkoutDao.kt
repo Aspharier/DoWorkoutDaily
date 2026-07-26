@@ -1,47 +1,56 @@
 package com.aspharier.doworkoutdaily.data.local
 
 import androidx.room.*
-import com.aspharier.doworkoutdaily.data.model.WorkoutLog
+import com.aspharier.doworkoutdaily.data.model.WorkoutEntry
+import com.aspharier.doworkoutdaily.data.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WorkoutDao {
-
+    // Sessions
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertWorkout(workout: WorkoutLog): Long
+    suspend fun insertSession(session: WorkoutSession): Long
+
+    @Update
+    suspend fun updateSession(session: WorkoutSession)
 
     @Delete
-    suspend fun deleteWorkout(workout: WorkoutLog)
+    suspend fun deleteSession(session: WorkoutSession)
 
-    @Query("SELECT * FROM workout_logs WHERE date = :date ORDER BY timestamp DESC")
-    fun getWorkoutsByDate(date: String): Flow<List<WorkoutLog>>
+    @Query("SELECT * FROM workout_sessions WHERE date = :date LIMIT 1")
+    fun getSessionByDate(date: String): Flow<WorkoutSession?>
 
-    @Query("SELECT * FROM workout_logs ORDER BY timestamp DESC")
-    fun getAllWorkouts(): Flow<List<WorkoutLog>>
+    @Query("SELECT * FROM workout_sessions WHERE date = :date LIMIT 1")
+    suspend fun getSessionByDateOnce(date: String): WorkoutSession?
 
-    @Query("SELECT * FROM workout_logs ORDER BY timestamp DESC LIMIT :limit")
-    fun getRecentWorkouts(limit: Int = 10): Flow<List<WorkoutLog>>
+    @Query("SELECT * FROM workout_sessions ORDER BY date DESC")
+    fun getAllSessions(): Flow<List<WorkoutSession>>
 
-    @Query("SELECT DISTINCT date FROM workout_logs ORDER BY date DESC")
-    fun getAllWorkoutDates(): Flow<List<String>>
+    @Query("SELECT * FROM workout_sessions WHERE date BETWEEN :startDate AND :endDate ORDER BY date")
+    fun getSessionsInRange(startDate: String, endDate: String): Flow<List<WorkoutSession>>
 
-    @Query("SELECT COUNT(*) FROM workout_logs WHERE date = :date")
-    fun getWorkoutCountForDate(date: String): Flow<Int>
+    @Query("SELECT COUNT(*) FROM workout_sessions WHERE isCompleted = 1")
+    fun getCompletedSessionCount(): Flow<Int>
 
-    @Query("SELECT DISTINCT date FROM workout_logs WHERE date BETWEEN :startDate AND :endDate ORDER BY date ASC")
-    fun getWorkoutDatesBetween(startDate: String, endDate: String): Flow<List<String>>
+    // Entries
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEntry(entry: WorkoutEntry): Long
 
-    @Query("SELECT COUNT(DISTINCT date) FROM workout_logs")
-    fun getTotalWorkoutDays(): Flow<Int>
+    @Update
+    suspend fun updateEntry(entry: WorkoutEntry)
 
-    @Query("SELECT COUNT(*) FROM workout_logs")
-    fun getTotalWorkouts(): Flow<Int>
+    @Delete
+    suspend fun deleteEntry(entry: WorkoutEntry)
 
-    @Query("SELECT date, COUNT(*) as count FROM workout_logs WHERE date BETWEEN :startDate AND :endDate GROUP BY date ORDER BY date ASC")
-    fun getWorkoutCountsBetween(startDate: String, endDate: String): Flow<List<DateCount>>
+    @Query("SELECT * FROM workout_entries WHERE sessionId = :sessionId ORDER BY orderIndex")
+    fun getEntriesForSession(sessionId: Long): Flow<List<WorkoutEntry>>
+
+    @Query("SELECT * FROM workout_entries WHERE exerciseName = :name ORDER BY sessionId")
+    fun getEntriesByExerciseName(name: String): Flow<List<WorkoutEntry>>
+
+    @Query("SELECT DISTINCT exerciseName FROM workout_entries")
+    fun getAllExerciseNames(): Flow<List<String>>
+
+    @Query("SELECT SUM(value) FROM workout_entries WHERE unit = 'km'")
+    fun getTotalKm(): Flow<Double?>
 }
-
-data class DateCount(
-    val date: String,
-    val count: Int
-)

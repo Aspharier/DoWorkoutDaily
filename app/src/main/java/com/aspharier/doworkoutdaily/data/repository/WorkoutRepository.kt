@@ -1,177 +1,115 @@
 package com.aspharier.doworkoutdaily.data.repository
 
 import com.aspharier.doworkoutdaily.data.local.WorkoutDao
-import com.aspharier.doworkoutdaily.data.local.SelfieDao
-import com.aspharier.doworkoutdaily.data.model.DailySelfie
-import com.aspharier.doworkoutdaily.data.model.WorkoutLog
+import com.aspharier.doworkoutdaily.data.model.WorkoutEntry
+import com.aspharier.doworkoutdaily.data.model.WorkoutSession
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-class WorkoutRepository(
-    private val dao: WorkoutDao,
-    private val selfieDao: SelfieDao
-) {
+class WorkoutRepository(private val dao: WorkoutDao) {
 
-    private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    suspend fun logWorkout(workout: WorkoutLog): Long {
-        return dao.insertWorkout(workout)
-    }
+    // Sessions
+    suspend fun insertSession(session: WorkoutSession): Long =
+        withContext(Dispatchers.IO) { dao.insertSession(session) }
 
-    suspend fun deleteWorkout(workout: WorkoutLog) {
-        dao.deleteWorkout(workout)
-    }
+    suspend fun updateSession(session: WorkoutSession) =
+        withContext(Dispatchers.IO) { dao.updateSession(session) }
 
-    fun getWorkoutsForDate(date: LocalDate): Flow<List<WorkoutLog>> {
-        return dao.getWorkoutsByDate(date.format(dateFormatter))
-    }
+    suspend fun deleteSession(session: WorkoutSession) =
+        withContext(Dispatchers.IO) { dao.deleteSession(session) }
 
-    fun getWorkoutsForToday(): Flow<List<WorkoutLog>> {
-        return getWorkoutsForDate(LocalDate.now())
-    }
+    fun getSessionByDate(date: String): Flow<WorkoutSession?> =
+        dao.getSessionByDate(date)
 
-    fun getAllWorkouts(): Flow<List<WorkoutLog>> {
-        return dao.getAllWorkouts()
-    }
+    suspend fun getSessionByDateOnce(date: String): WorkoutSession? =
+        withContext(Dispatchers.IO) { dao.getSessionByDateOnce(date) }
 
-    fun getRecentWorkouts(limit: Int = 10): Flow<List<WorkoutLog>> {
-        return dao.getRecentWorkouts(limit)
-    }
+    fun getAllSessions(): Flow<List<WorkoutSession>> =
+        dao.getAllSessions()
 
-    fun getTotalWorkoutDays(): Flow<Int> {
-        return dao.getTotalWorkoutDays()
-    }
+    fun getSessionsInRange(startDate: String, endDate: String): Flow<List<WorkoutSession>> =
+        dao.getSessionsInRange(startDate, endDate)
 
-    fun getTotalWorkouts(): Flow<Int> {
-        return dao.getTotalWorkouts()
-    }
+    fun getCompletedSessionCount(): Flow<Int> =
+        dao.getCompletedSessionCount()
 
-    fun getWorkoutCountForToday(): Flow<Int> {
-        return dao.getWorkoutCountForDate(LocalDate.now().format(dateFormatter))
-    }
+    // Entries
+    suspend fun insertEntry(entry: WorkoutEntry): Long =
+        withContext(Dispatchers.IO) { dao.insertEntry(entry) }
 
-    /**
-     * Returns a map of date strings to workout counts for heatmap display.
-     */
-    fun getHeatmapData(startDate: LocalDate, endDate: LocalDate): Flow<Map<String, Int>> {
-        return dao.getWorkoutCountsBetween(
-            startDate.format(dateFormatter),
-            endDate.format(dateFormatter)
-        ).map { dateCounts ->
-            dateCounts.associate { it.date to it.count }
-        }
-    }
+    suspend fun updateEntry(entry: WorkoutEntry) =
+        withContext(Dispatchers.IO) { dao.updateEntry(entry) }
 
-    /**
-     * Calculates the current streak — consecutive days with workouts ending today.
-     */
-    fun getCurrentStreak(): Flow<Int> {
-        return dao.getAllWorkoutDates().map { dateStrings ->
-            calculateStreak(dateStrings)
-        }
-    }
+    suspend fun deleteEntry(entry: WorkoutEntry) =
+        withContext(Dispatchers.IO) { dao.deleteEntry(entry) }
 
-    /**
-     * Calculates the longest streak ever.
-     */
-    fun getLongestStreak(): Flow<Int> {
-        return dao.getAllWorkoutDates().map { dateStrings ->
-            calculateLongestStreak(dateStrings)
-        }
-    }
+    fun getEntriesForSession(sessionId: Long): Flow<List<WorkoutEntry>> =
+        dao.getEntriesForSession(sessionId)
 
-    private fun calculateStreak(dateStrings: List<String>): Int {
-        if (dateStrings.isEmpty()) return 0
+    fun getEntriesByExerciseName(name: String): Flow<List<WorkoutEntry>> =
+        dao.getEntriesByExerciseName(name)
 
-        val dates = dateStrings
-            .mapNotNull { runCatching { LocalDate.parse(it, dateFormatter) }.getOrNull() }
-            .distinct()
+    fun getAllExerciseNames(): Flow<List<String>> =
+        dao.getAllExerciseNames()
+
+    fun getTotalKm(): Flow<Double> =
+        dao.getTotalKm().map { it ?: 0.0 }
+
+    // Streak calculation
+    suspend fun calculateStreak(): Int = withContext(Dispatchers.IO) {
+        val sessions = dao.getAllSessions().first()
+        val completedDates = sessions
+            .filter { it.isCompleted }
+            .map { LocalDate.parse(it.date, dateFormatter) }
             .sortedDescending()
 
-        val today = LocalDate.now()
-        val yesterday = today.minusDays(1)
+        if (completedDates.isEmpty()) return@withContext 0
 
-        // Streak must include today or yesterday
-        if (dates.isEmpty() || (dates.first() != today && dates.first() != yesterday)) return 0
+        var streak = 0
+        var expectedDate = LocalDate.now()
 
-        var streak = 1
-        for (i in 0 until dates.size - 1) {
-            if (dates[i].minusDays(1) == dates[i + 1]) {
+        // If today hasn't been completed yet, start from yesterday
+        if (!completedDates.contains(expectedDate)) {
+            expectedDate = expectedDate.minusDays(1)
+        }
+
+        for (date in completedDates) {
+            if (date == expectedDate) {
                 streak++
-            } else {
+                expectedDate = expectedDate.minusDays(1)
+            } else if (date.isBefore(expectedDate)) {
                 break
             }
         }
-        return streak
+        streak
     }
 
-    private fun calculateLongestStreak(dateStrings: List<String>): Int {
-        if (dateStrings.isEmpty()) return 0
-
-        val dates = dateStrings
-            .mapNotNull { runCatching { LocalDate.parse(it, dateFormatter) }.getOrNull() }
-            .distinct()
-            .sorted()
-
-        var longest = 1
-        var current = 1
-
-        for (i in 1 until dates.size) {
-            if (dates[i - 1].plusDays(1) == dates[i]) {
-                current++
-                longest = maxOf(longest, current)
-            } else {
-                current = 1
-            }
-        }
-        return longest
-    }
-
-    /**
-     * Returns all workout dates for heatmap rendering.
-     */
-    fun getAllWorkoutDatesWithCounts(): Flow<Map<LocalDate, Int>> {
-        return dao.getAllWorkouts().map { logs ->
-            logs.groupBy { LocalDate.parse(it.date, dateFormatter) }
-                .mapValues { it.value.size }
-        }
-    }
-
-    /**
-     * Returns workouts count for the current week.
-     */
-    fun getThisWeekCount(): Flow<Int> {
+    // Week sessions
+    suspend fun getWeekSessions(): List<WorkoutSession> = withContext(Dispatchers.IO) {
         val today = LocalDate.now()
         val startOfWeek = today.minusDays(today.dayOfWeek.value.toLong() - 1)
-        return dao.getWorkoutDatesBetween(
+        val endOfWeek = startOfWeek.plusDays(6)
+        dao.getSessionsInRange(
             startOfWeek.format(dateFormatter),
-            today.format(dateFormatter)
-        ).map { it.size }
+            endOfWeek.format(dateFormatter)
+        ).first()
     }
 
-    suspend fun saveSelfie(date: LocalDate, imagePath: String) {
-        selfieDao.insertSelfie(DailySelfie(date.format(dateFormatter), imagePath))
-    }
-
-    suspend fun deleteSelfie(date: LocalDate) {
-        val dateString = date.format(dateFormatter)
-        val selfie = selfieDao.getSelfieByDate(dateString)
-        if (selfie != null) {
-            selfieDao.deleteSelfie(selfie)
+    // Yesterday's entries
+    suspend fun getYesterdayEntries(): List<WorkoutEntry> = withContext(Dispatchers.IO) {
+        val yesterday = LocalDate.now().minusDays(1).format(dateFormatter)
+        val session = dao.getSessionByDateOnce(yesterday)
+        if (session != null) {
+            dao.getEntriesForSession(session.id).first()
+        } else {
+            emptyList()
         }
-    }
-
-    suspend fun getSelfieByDate(date: LocalDate): DailySelfie? {
-        return selfieDao.getSelfieByDate(date.format(dateFormatter))
-    }
-
-    fun getSelfieFlowByDate(date: LocalDate): Flow<DailySelfie?> {
-        return selfieDao.getSelfieFlowByDate(date.format(dateFormatter))
-    }
-
-    fun getAllSelfies(): Flow<List<DailySelfie>> {
-        return selfieDao.getAllSelfies()
     }
 }
